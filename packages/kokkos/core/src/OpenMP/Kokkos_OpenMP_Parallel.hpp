@@ -114,9 +114,7 @@ public:
 
   inline void execute() const
   {
-    enum { is_dynamic = std::is_same< typename Policy::schedule_type::type
-         , Kokkos::Dynamic >::value
-         };
+    enum { is_dynamic = false };
 
     if ( OpenMP::in_parallel() ) {
       exec_range< WorkTag >( m_functor
@@ -213,8 +211,8 @@ public:
 
   inline void execute() const
   {
-      enum { is_dynamic = std::is_same< typename Policy::schedule_type::type
-                                      , Kokkos::Dynamic >::value };
+      enum { is_dynamic = false };
+                                 
 
     if ( OpenMP::in_parallel() ) {
       ParallelFor::exec_range ( m_mdr_policy
@@ -343,8 +341,8 @@ public:
 
   inline void execute() const
     {
-      enum { is_dynamic = std::is_same< typename Policy::schedule_type::type
-                                      , Kokkos::Dynamic >::value };
+      enum { is_dynamic = false };
+                                 
 
       OpenMPExec::verify_is_master("Kokkos::OpenMP parallel_reduce");
 
@@ -512,8 +510,8 @@ public:
 
   inline void execute() const
     {
-      enum { is_dynamic = std::is_same< typename Policy::schedule_type::type
-                                      , Kokkos::Dynamic >::value };
+      enum { is_dynamic = false };
+                                 
 
       OpenMPExec::verify_is_master("Kokkos::OpenMP parallel_reduce");
 
@@ -986,7 +984,7 @@ public:
   inline
   void execute() const
     {
-      enum { is_dynamic = std::is_same< SchedTag , Kokkos::Dynamic >::value };
+      enum { is_dynamic = false};
 
       OpenMPExec::verify_is_master("Kokkos::OpenMP parallel_for");
 
@@ -1149,7 +1147,7 @@ public:
   inline
   void execute() const
     {
-      enum { is_dynamic = std::is_same< SchedTag , Kokkos::Dynamic >::value };
+      enum { is_dynamic = false};
 
       OpenMPExec::verify_is_master("Kokkos::OpenMP parallel_reduce");
 
