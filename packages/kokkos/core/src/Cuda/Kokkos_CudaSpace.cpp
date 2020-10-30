@@ -203,6 +203,7 @@ void *CudaSpace::allocate(const size_t arg_alloc_size) const {
 }
 void *CudaSpace::allocate(const char *arg_label, const size_t arg_alloc_size,
                           const size_t arg_logical_size) const {
+#ifndef KOKKOS_IMPL_TRILINOS_ONLY_DEBUG_CUDA_FORCE_UVM
   void *ptr = nullptr;
 
   auto error_code = cudaMalloc(&ptr, arg_alloc_size);
@@ -224,6 +225,42 @@ void *CudaSpace::allocate(const char *arg_label, const size_t arg_alloc_size,
         reported_size);
   }
   return ptr;
+#else
+  void *ptr = nullptr;
+
+  Cuda::impl_static_fence();
+  if (arg_alloc_size > 0) {
+    Kokkos::Impl::num_uvm_allocations++;
+
+    auto error_code =
+        cudaMallocManaged(&ptr, arg_alloc_size, cudaMemAttachGlobal);
+
+#ifdef KOKKOS_IMPL_DEBUG_CUDA_PIN_UVM_TO_HOST
+    if (Kokkos::CudaUVMSpace::cuda_pin_uvm_to_host())
+      cudaMemAdvise(ptr, arg_alloc_size, cudaMemAdviseSetPreferredLocation,
+                    cudaCpuDeviceId);
+#endif
+
+    if (error_code != cudaSuccess) {  // TODO tag as unlikely branch
+      cudaGetLastError();  // This is the only way to clear the last error,
+                           // which we should do here since we're turning it
+                           // into an exception here
+      throw Experimental::CudaRawMemoryAllocationFailure(
+          arg_alloc_size, error_code,
+          Experimental::RawMemoryAllocationFailure::AllocationMechanism::
+              CudaMallocManaged);
+    }
+  }
+  Cuda::impl_static_fence();
+  if (Kokkos::Profiling::profileLibraryLoaded()) {
+    const size_t reported_size =
+        (arg_logical_size > 0) ? arg_logical_size : arg_alloc_size;
+    Kokkos::Profiling::allocateData(
+        Kokkos::Profiling::make_space_handle(name()), arg_label, ptr,
+        reported_size);
+  }
+  return ptr;
+#endif
 }
 
 void *CudaUVMSpace::allocate(const size_t arg_alloc_size) const {
@@ -304,6 +341,7 @@ void CudaSpace::deallocate(void *const arg_alloc_ptr,
 void CudaSpace::deallocate(const char *arg_label, void *const arg_alloc_ptr,
                            const size_t arg_alloc_size,
                            const size_t arg_logical_size) const {
+#ifndef KOKKOS_IMPL_TRILINOS_ONLY_DEBUG_CUDA_FORCE_UVM
   if (Kokkos::Profiling::profileLibraryLoaded()) {
     const size_t reported_size =
         (arg_logical_size > 0) ? arg_logical_size : arg_alloc_size;
@@ -316,6 +354,24 @@ void CudaSpace::deallocate(const char *arg_label, void *const arg_alloc_ptr,
     CUDA_SAFE_CALL(cudaFree(arg_alloc_ptr));
   } catch (...) {
   }
+#else
+  Cuda::impl_static_fence();
+  if (Kokkos::Profiling::profileLibraryLoaded()) {
+    const size_t reported_size =
+        (arg_logical_size > 0) ? arg_logical_size : arg_alloc_size;
+    Kokkos::Profiling::deallocateData(
+        Kokkos::Profiling::make_space_handle(name()), arg_label, arg_alloc_ptr,
+        reported_size);
+  }
+  try {
+    if (arg_alloc_ptr != nullptr) {
+      Kokkos::Impl::num_uvm_allocations--;
+      CUDA_SAFE_CALL(cudaFree(arg_alloc_ptr));
+    }
+  } catch (...) {
+  }
+  Cuda::impl_static_fence();
+#endif
 }
 void CudaUVMSpace::deallocate(void *const arg_alloc_ptr,
                               const size_t arg_alloc_size) const {
