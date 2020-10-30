@@ -798,8 +798,10 @@ class View : public ViewTraits<DataType, Properties...> {
   template <class Space>
   struct verify_space<Space, false> {
     KOKKOS_FORCEINLINE_FUNCTION static void check() {
+#ifndef KOKKOS_IMPL_TRILINOS_ONLY_DEBUG_CUDA_FORCE_UVM
       Kokkos::abort(
           "Kokkos::View ERROR: attempt to access inaccessible memory space");
+#endif
     };
   };
 
