@@ -50,6 +50,7 @@
 #endif
 
 #include <cstring>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
@@ -58,7 +59,7 @@
 #include <stack>
 #include <iostream>
 namespace Kokkos {
-
+std::string g_last_cuda_kernel;
 namespace Tools {
 
 namespace Experimental {

@@ -54,7 +54,7 @@
 #include <map>
 #include <type_traits>
 namespace Kokkos {
-
+extern std::string g_last_cuda_kernel;
 // forward declaration
 bool tune_internals() noexcept;
 
@@ -363,6 +363,7 @@ void report_policy_results(const size_t /**tuning_context*/,
 template <class ExecPolicy, class FunctorType>
 void begin_parallel_for(ExecPolicy& policy, FunctorType& functor,
                         const std::string& label, uint64_t& kpID) {
+  g_last_cuda_kernel = label;
   if (Kokkos::Tools::profileLibraryLoaded()) {
     Kokkos::Impl::ParallelConstructName<FunctorType,
                                         typename ExecPolicy::work_tag>
@@ -403,6 +404,7 @@ void end_parallel_for(ExecPolicy& policy, FunctorType& functor,
 template <class ExecPolicy, class FunctorType>
 void begin_parallel_scan(ExecPolicy& policy, FunctorType& functor,
                          const std::string& label, uint64_t& kpID) {
+  g_last_cuda_kernel = label;
   if (Kokkos::Tools::profileLibraryLoaded()) {
     Kokkos::Impl::ParallelConstructName<FunctorType,
                                         typename ExecPolicy::work_tag>
@@ -443,6 +445,7 @@ void end_parallel_scan(ExecPolicy& policy, FunctorType& functor,
 template <class ReducerType, class ExecPolicy, class FunctorType>
 void begin_parallel_reduce(ExecPolicy& policy, FunctorType& functor,
                            const std::string& label, uint64_t& kpID) {
+  g_last_cuda_kernel = label;
   if (Kokkos::Tools::profileLibraryLoaded()) {
     Kokkos::Impl::ParallelConstructName<FunctorType,
                                         typename ExecPolicy::work_tag>

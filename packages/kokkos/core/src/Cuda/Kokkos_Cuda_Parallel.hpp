@@ -62,17 +62,17 @@
 #include <Cuda/Kokkos_Cuda_Locks.hpp>
 #include <Kokkos_Vectorization.hpp>
 #include <Cuda/Kokkos_Cuda_Version_9_8_Compatibility.hpp>
-
+#include <impl/Kokkos_Stacktrace.hpp>
 #include <impl/Kokkos_Tools.hpp>
 #include <typeinfo>
-
+#include <iostream>
 #include <KokkosExp_MDRangePolicy.hpp>
 
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
 namespace Kokkos {
-
+extern std::string g_last_cuda_kernel;
 extern bool show_warnings() noexcept;
 
 namespace Impl {
@@ -263,7 +263,7 @@ class TeamPolicyInternal<Kokkos::Cuda, Properties...>
   }
 
   const typename traits::execution_space& space() const { return m_space; }
-
+  
   TeamPolicyInternal()
       : m_space(typename traits::execution_space()),
         m_league_size(0),
@@ -299,6 +299,9 @@ class TeamPolicyInternal<Kokkos::Cuda, Properties...>
     // Make sure total block size is permissible
     if (m_team_size * m_vector_length >
         int(Impl::CudaTraits::MaxHierarchicalParallelism)) {
+      std::cout << "Ran into a problem with kernel "<<g_last_cuda_kernel<<std::endl;
+      Impl::save_stacktrace();
+      Impl::print_saved_stacktrace(std::cout);
       Impl::throw_runtime_exception(
           std::string("Kokkos::TeamPolicy< Cuda > the team size is too large. "
                       "Team size x vector length must be smaller than 1024."));
